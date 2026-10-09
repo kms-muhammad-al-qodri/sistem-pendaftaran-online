@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+backend/vendor/
+
+# Environment files
+.env
+*.env
+!.env.example
+
+# Build Outputs & Binaries
+dist/
+build/
+*.exe
+*.exe.main
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+backend/cmd/api/api.exe
+backend/cmd/migrate/migrate.exe
+backend/cmd/seed/seed.exe
+
+# IDEs & System files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

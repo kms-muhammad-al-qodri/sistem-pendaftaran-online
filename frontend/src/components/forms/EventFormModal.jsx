@@ -1,67 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Modal from '../ui/Modal';
 import { apiFetch } from '../../api/client';
-import { Image, Calendar, MapPin, Users, FileText, Layers } from 'lucide-react';
+
+// Preset Unsplash images for easy visual demo creation
+const PRESET_IMAGES = [
+  { label: 'AI & Tech', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80' },
+  { label: 'Coding Seminar', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=crop&q=80' },
+  { label: 'Business & Startup', url: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=80' },
+];
+
+const formatISOToLocalInput = (isoStr) => {
+  if (!isoStr) return '';
+  const date = new Date(isoStr);
+  const pad = (n) => (n < 10 ? '0' + n : n);
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
 
 export default function EventFormModal({ isOpen, onClose, eventToEdit, onSuccess }) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [location, setLocation] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [startsAt, setStartsAt] = useState('');
-  const [endsAt, setEndsAt] = useState('');
-  const [regOpensAt, setRegOpensAt] = useState('');
-  const [regClosesAt, setRegClosesAt] = useState('');
-  const [quota, setQuota] = useState(100);
-  const [status, setStatus] = useState('draft');
+  const [title, setTitle] = useState(eventToEdit?.title || '');
+  const [description, setDescription] = useState(eventToEdit?.description || '');
+  const [location, setLocation] = useState(eventToEdit?.location || 'Online / Zoom Meeting');
+  const [imageUrl, setImageUrl] = useState(eventToEdit?.image_url || PRESET_IMAGES[0].url);
+  const [startsAt, setStartsAt] = useState(() =>
+    eventToEdit
+      ? formatISOToLocalInput(eventToEdit.starts_at)
+      : formatISOToLocalInput(new Date(Date.now() + 7 * 86400000).toISOString())
+  );
+  const [endsAt, setEndsAt] = useState(() =>
+    eventToEdit
+      ? formatISOToLocalInput(eventToEdit.ends_at)
+      : formatISOToLocalInput(new Date(Date.now() + 14 * 86400000).toISOString())
+  );
+  const [regOpensAt, setRegOpensAt] = useState(() =>
+    eventToEdit
+      ? formatISOToLocalInput(eventToEdit.registration_opens_at)
+      : formatISOToLocalInput(new Date().toISOString())
+  );
+  const [regClosesAt, setRegClosesAt] = useState(() =>
+    eventToEdit
+      ? formatISOToLocalInput(eventToEdit.registration_closes_at)
+      : formatISOToLocalInput(new Date(Date.now() + 7 * 86400000).toISOString())
+  );
+  const [quota, setQuota] = useState(eventToEdit?.quota || 100);
+  const [status, setStatus] = useState(eventToEdit?.status || 'published');
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-
-  // Preset Unsplash images for easy visual demo creation!
-  const presetImages = [
-    { label: 'AI & Tech', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80' },
-    { label: 'Coding Seminar', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=crop&q=80' },
-    { label: 'Business & Startup', url: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=80' },
-  ];
-
-  const formatISOToLocalInput = (isoStr) => {
-    if (!isoStr) return '';
-    const date = new Date(isoStr);
-    const pad = (n) => (n < 10 ? '0' + n : n);
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  };
-
-  useEffect(() => {
-    if (eventToEdit) {
-      setTitle(eventToEdit.title || '');
-      setDescription(eventToEdit.description || '');
-      setLocation(eventToEdit.location || '');
-      setImageUrl(eventToEdit.image_url || '');
-      setStartsAt(formatISOToLocalInput(eventToEdit.starts_at));
-      setEndsAt(formatISOToLocalInput(eventToEdit.ends_at));
-      setRegOpensAt(formatISOToLocalInput(eventToEdit.registration_opens_at));
-      setRegClosesAt(formatISOToLocalInput(eventToEdit.registration_closes_at));
-      setQuota(eventToEdit.quota || 100);
-      setStatus(eventToEdit.status || 'draft');
-    } else {
-      const now = new Date();
-      const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      const in14Days = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-
-      setTitle('');
-      setDescription('');
-      setLocation('Online / Zoom Meeting');
-      setImageUrl(presetImages[0].url);
-      setRegOpensAt(formatISOToLocalInput(now.toISOString()));
-      setRegClosesAt(formatISOToLocalInput(in7Days.toISOString()));
-      setStartsAt(formatISOToLocalInput(in7Days.toISOString()));
-      setEndsAt(formatISOToLocalInput(in14Days.toISOString()));
-      setQuota(100);
-      setStatus('published');
-    }
-    setErrorMsg('');
-  }, [eventToEdit, isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -70,10 +54,10 @@ export default function EventFormModal({ isOpen, onClose, eventToEdit, onSuccess
 
     try {
       const payload = {
-        title,
-        description,
-        location,
-        image_url: imageUrl ? imageUrl : null,
+        title: title.trim(),
+        description: description.trim(),
+        location: location.trim(),
+        image_url: imageUrl ? imageUrl.trim() : null,
         starts_at: new Date(startsAt).toISOString(),
         ends_at: new Date(endsAt).toISOString(),
         registration_opens_at: new Date(regOpensAt).toISOString(),
@@ -107,7 +91,7 @@ export default function EventFormModal({ isOpen, onClose, eventToEdit, onSuccess
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={eventToEdit ? `Edit Event: ${eventToEdit.title}` : 'Buat Event Baru'}
+      title={eventToEdit ? `Edit Event: ${eventToEdit.title}` : 'Buat Event Seminar Baru'}
       maxWidth="680px"
     >
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -139,20 +123,19 @@ export default function EventFormModal({ isOpen, onClose, eventToEdit, onSuccess
             style={{
               width: '100%',
               padding: '12px 14px',
-              background: 'rgba(15, 23, 42, 0.8)',
+              background: 'rgba(7, 12, 24, 0.8)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '10px',
               color: '#ffffff',
-              fontSize: '0.925rem',
               outline: 'none',
             }}
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '16px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
-              Lokasi / Medium *
+              Lokasi / Media *
             </label>
             <input
               type="text"
@@ -163,11 +146,10 @@ export default function EventFormModal({ isOpen, onClose, eventToEdit, onSuccess
               style={{
                 width: '100%',
                 padding: '12px 14px',
-                background: 'rgba(15, 23, 42, 0.8)',
+                background: 'rgba(7, 12, 24, 0.8)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: '10px',
                 color: '#ffffff',
-                fontSize: '0.925rem',
                 outline: 'none',
               }}
             />
@@ -186,11 +168,10 @@ export default function EventFormModal({ isOpen, onClose, eventToEdit, onSuccess
               style={{
                 width: '100%',
                 padding: '12px 14px',
-                background: 'rgba(15, 23, 42, 0.8)',
+                background: 'rgba(7, 12, 24, 0.8)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: '10px',
                 color: '#ffffff',
-                fontSize: '0.925rem',
                 outline: 'none',
               }}
             />
@@ -209,19 +190,18 @@ export default function EventFormModal({ isOpen, onClose, eventToEdit, onSuccess
             style={{
               width: '100%',
               padding: '12px 14px',
-              background: 'rgba(15, 23, 42, 0.8)',
+              background: 'rgba(7, 12, 24, 0.8)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '10px',
               color: '#ffffff',
-              fontSize: '0.925rem',
               outline: 'none',
               marginBottom: '8px',
             }}
           />
           {/* Preset Buttons */}
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Pilih Preset Gambar:</span>
-            {presetImages.map((img, i) => (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Pilih Preset Poster:</span>
+            {PRESET_IMAGES.map((img, i) => (
               <button
                 key={i}
                 type="button"
@@ -249,24 +229,23 @@ export default function EventFormModal({ isOpen, onClose, eventToEdit, onSuccess
           <textarea
             required
             rows={4}
-            placeholder="Jelaskan detail mengenai topik seminar, benefit, sertifikat, dan agenda acara..."
+            placeholder="Jelaskan detail mengenai topik seminar, benefit sertifikat, dan agenda acara..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             style={{
               width: '100%',
               padding: '12px 14px',
-              background: 'rgba(15, 23, 42, 0.8)',
+              background: 'rgba(7, 12, 24, 0.8)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '10px',
               color: '#ffffff',
-              fontSize: '0.925rem',
               outline: 'none',
               resize: 'vertical',
             }}
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '16px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
               Pendaftaran Dibuka *
@@ -279,11 +258,10 @@ export default function EventFormModal({ isOpen, onClose, eventToEdit, onSuccess
               style={{
                 width: '100%',
                 padding: '10px 12px',
-                background: 'rgba(15, 23, 42, 0.8)',
+                background: 'rgba(7, 12, 24, 0.8)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: '10px',
                 color: '#ffffff',
-                fontSize: '0.85rem',
                 outline: 'none',
               }}
             />
@@ -301,18 +279,17 @@ export default function EventFormModal({ isOpen, onClose, eventToEdit, onSuccess
               style={{
                 width: '100%',
                 padding: '10px 12px',
-                background: 'rgba(15, 23, 42, 0.8)',
+                background: 'rgba(7, 12, 24, 0.8)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: '10px',
                 color: '#ffffff',
-                fontSize: '0.85rem',
                 outline: 'none',
               }}
             />
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '16px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
               Waktu Mulai Acara *
@@ -325,11 +302,10 @@ export default function EventFormModal({ isOpen, onClose, eventToEdit, onSuccess
               style={{
                 width: '100%',
                 padding: '10px 12px',
-                background: 'rgba(15, 23, 42, 0.8)',
+                background: 'rgba(7, 12, 24, 0.8)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: '10px',
                 color: '#ffffff',
-                fontSize: '0.85rem',
                 outline: 'none',
               }}
             />
@@ -347,11 +323,10 @@ export default function EventFormModal({ isOpen, onClose, eventToEdit, onSuccess
               style={{
                 width: '100%',
                 padding: '10px 12px',
-                background: 'rgba(15, 23, 42, 0.8)',
+                background: 'rgba(7, 12, 24, 0.8)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: '10px',
                 color: '#ffffff',
-                fontSize: '0.85rem',
                 outline: 'none',
               }}
             />
@@ -368,12 +343,12 @@ export default function EventFormModal({ isOpen, onClose, eventToEdit, onSuccess
             style={{
               width: '100%',
               padding: '12px 14px',
-              background: 'rgba(15, 23, 42, 0.8)',
+              background: 'rgba(7, 12, 24, 0.8)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '10px',
               color: '#ffffff',
-              fontSize: '0.925rem',
               outline: 'none',
+              cursor: 'pointer',
             }}
           >
             <option value="draft">Draft (Belum Dipublikasi)</option>
@@ -383,26 +358,25 @@ export default function EventFormModal({ isOpen, onClose, eventToEdit, onSuccess
           </select>
         </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          style={{
-            marginTop: '12px',
-            width: '100%',
-            padding: '13px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-            color: '#ffffff',
-            fontWeight: 700,
-            fontSize: '0.95rem',
-            border: 'none',
-            cursor: submitting ? 'wait' : 'pointer',
-            opacity: submitting ? 0.7 : 1,
-            boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
-          }}
-        >
-          {submitting ? 'Menyimpan...' : eventToEdit ? 'Simpan Perubahan Event' : 'Buat Event Sekarang'}
-        </button>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={onClose}
+            className="btn btn-ghost"
+            style={{ flex: 1 }}
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="btn btn-primary"
+            style={{ flex: 2 }}
+          >
+            {submitting ? 'Menyimpan...' : eventToEdit ? 'Simpan Perubahan' : 'Buat Event'}
+          </button>
+        </div>
       </form>
     </Modal>
   );

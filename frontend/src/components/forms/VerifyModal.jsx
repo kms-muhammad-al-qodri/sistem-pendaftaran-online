@@ -1,19 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Modal from '../ui/Modal';
 import { apiFetch } from '../../api/client';
-import { CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, XCircle } from 'lucide-react';
 
 export default function VerifyModal({ isOpen, onClose, registration, onSuccess }) {
   const [action, setAction] = useState('confirm'); // 'confirm' | 'reject'
   const [rejectionReason, setRejectionReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-
-  useEffect(() => {
-    setAction('confirm');
-    setRejectionReason('');
-    setErrorMsg('');
-  }, [registration, isOpen]);
 
   if (!registration) return null;
 
@@ -30,7 +24,7 @@ export default function VerifyModal({ isOpen, onClose, registration, onSuccess }
     try {
       const payload = {
         status: action === 'confirm' ? 'confirmed' : 'rejected',
-        rejection_reason: action === 'reject' ? rejectionReason : '',
+        rejection_reason: action === 'reject' ? rejectionReason.trim() : '',
       };
 
       await apiFetch(`/admin/registrations/${registration.id}/status`, {
@@ -51,15 +45,18 @@ export default function VerifyModal({ isOpen, onClose, registration, onSuccess }
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Verifikasi Pendaftaran: ${registration.registration_number}`}
+      title={`Verifikasi: ${registration.registration_number}`}
       maxWidth="480px"
     >
-      <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
-        <p style={{ fontSize: '0.875rem', color: '#94a3b8', marginBottom: '4px' }}>Nama Peserta:</p>
-        <p style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f8fafc', marginBottom: '12px' }}>{registration.name}</p>
+      <div style={{ background: 'rgba(7, 12, 24, 0.7)', padding: '16px', borderRadius: '12px', marginBottom: '18px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+        <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '2px', textTransform: 'uppercase' }}>Nama Peserta:</p>
+        <p style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f8fafc', marginBottom: '10px' }}>{registration.name}</p>
         
-        <p style={{ fontSize: '0.875rem', color: '#94a3b8', marginBottom: '4px' }}>Email & HP:</p>
-        <p style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>{registration.email} ({registration.phone})</p>
+        <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '2px', textTransform: 'uppercase' }}>Email & Kontak:</p>
+        <p style={{ fontSize: '0.875rem', color: '#cbd5e1' }}>{registration.email} • {registration.phone}</p>
+        {registration.institution && (
+          <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '4px' }}>Instansi: {registration.institution}</p>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -86,14 +83,14 @@ export default function VerifyModal({ isOpen, onClose, registration, onSuccess }
               flex: 1,
               padding: '12px',
               borderRadius: '10px',
-              fontWeight: 600,
-              fontSize: '0.9rem',
+              fontWeight: 700,
+              fontSize: '0.875rem',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
               color: action === 'confirm' ? '#10b981' : '#94a3b8',
-              background: action === 'confirm' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+              background: action === 'confirm' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255, 255, 255, 0.04)',
               border: action === 'confirm' ? '2px solid #10b981' : '1px solid rgba(255, 255, 255, 0.1)',
               cursor: 'pointer',
               transition: 'all 0.2s',
@@ -110,14 +107,14 @@ export default function VerifyModal({ isOpen, onClose, registration, onSuccess }
               flex: 1,
               padding: '12px',
               borderRadius: '10px',
-              fontWeight: 600,
-              fontSize: '0.9rem',
+              fontWeight: 700,
+              fontSize: '0.875rem',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
               color: action === 'reject' ? '#f43f5e' : '#94a3b8',
-              background: action === 'reject' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+              background: action === 'reject' ? 'rgba(244, 63, 94, 0.18)' : 'rgba(255, 255, 255, 0.04)',
               border: action === 'reject' ? '2px solid #f43f5e' : '1px solid rgba(255, 255, 255, 0.1)',
               cursor: 'pointer',
               transition: 'all 0.2s',
@@ -136,17 +133,16 @@ export default function VerifyModal({ isOpen, onClose, registration, onSuccess }
             <textarea
               required
               rows={3}
-              placeholder="Contoh: Data instansi/kontak tidak dapat diverifikasi."
+              placeholder="Contoh: Data kontak tidak valid atau kuota instansi telah terpenuhi."
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
               style={{
                 width: '100%',
                 padding: '12px 14px',
-                background: 'rgba(15, 23, 42, 0.8)',
+                background: 'rgba(7, 12, 24, 0.8)',
                 border: '1px solid rgba(244, 63, 94, 0.4)',
                 borderRadius: '10px',
                 color: '#ffffff',
-                fontSize: '0.9rem',
                 outline: 'none',
               }}
             />
@@ -157,21 +153,30 @@ export default function VerifyModal({ isOpen, onClose, registration, onSuccess }
           type="submit"
           disabled={submitting}
           style={{
-            marginTop: '8px',
+            marginTop: '6px',
             width: '100%',
             padding: '12px',
-            borderRadius: '10px',
-            background: action === 'confirm' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
-            color: '#ffffff',
-            fontWeight: 700,
             fontSize: '0.95rem',
+            fontWeight: 700,
+            borderRadius: '10px',
             border: 'none',
             cursor: submitting ? 'wait' : 'pointer',
-            opacity: submitting ? 0.7 : 1,
-            boxShadow: action === 'confirm' ? '0 4px 14px rgba(16, 185, 129, 0.4)' : '0 4px 14px rgba(244, 63, 94, 0.4)',
+            background:
+              action === 'confirm'
+                ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                : 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
+            color: '#ffffff',
+            boxShadow:
+              action === 'confirm'
+                ? '0 4px 14px rgba(16, 185, 129, 0.4)'
+                : '0 4px 14px rgba(244, 63, 94, 0.4)',
           }}
         >
-          {submitting ? 'Menyimpan...' : action === 'confirm' ? 'Konfirmasi Penerimaan Peserta' : 'Tolak Pendaftaran'}
+          {submitting
+            ? 'Menyimpan...'
+            : action === 'confirm'
+            ? 'Konfirmasi Penerimaan Peserta'
+            : 'Tolak Pendaftaran'}
         </button>
       </form>
     </Modal>

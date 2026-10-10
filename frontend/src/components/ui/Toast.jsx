@@ -12,48 +12,52 @@ export default function Toast({ type = 'info', message, onClose, duration = 4000
   }, [duration, onClose]);
 
   const icons = {
-    success: <CheckCircle2 size={20} className="text-emerald-400" />,
-    error: <AlertCircle size={20} className="text-rose-400" />,
-    info: <Info size={20} className="text-cyan-400" />,
+    success: <CheckCircle2 size={20} style={{ color: '#10b981', flexShrink: 0 }} />,
+    error: <AlertCircle size={20} style={{ color: '#f43f5e', flexShrink: 0 }} />,
+    info: <Info size={20} style={{ color: '#38bdf8', flexShrink: 0 }} />,
   };
 
   const bgColors = {
-    success: 'rgba(16, 185, 129, 0.15)',
-    error: 'rgba(244, 63, 94, 0.15)',
-    info: 'rgba(6, 182, 212, 0.15)',
+    success: 'rgba(16, 185, 129, 0.16)',
+    error: 'rgba(244, 63, 94, 0.16)',
+    info: 'rgba(6, 182, 212, 0.16)',
   };
 
   const borderColors = {
-    success: 'rgba(16, 185, 129, 0.4)',
-    error: 'rgba(244, 63, 94, 0.4)',
-    info: 'rgba(6, 182, 212, 0.4)',
+    success: 'rgba(16, 185, 129, 0.45)',
+    error: 'rgba(244, 63, 94, 0.45)',
+    info: 'rgba(6, 182, 212, 0.45)',
   };
 
   return (
     <div
       style={{
         position: 'fixed',
-        bottom: '24px',
-        right: '24px',
+        bottom: '20px',
+        right: '20px',
         zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
         gap: '12px',
-        padding: '14px 20px',
+        padding: '12px 18px',
         borderRadius: '12px',
         background: bgColors[type] || bgColors.info,
         border: `1px solid ${borderColors[type] || borderColors.info}`,
-        backdropFilter: 'blur(12px)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         color: '#f8fafc',
-        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.4)',
-        animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-        maxWidth: '420px',
+        boxShadow: '0 12px 35px rgba(0, 0, 0, 0.55)',
+        animation: 'slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+        maxWidth: 'min(440px, calc(100vw - 32px))',
       }}
     >
-      {icons[type]}
-      <span style={{ fontSize: '0.925rem', fontWeight: 500, flex: 1 }}>{message}</span>
+      {icons[type] || icons.info}
+      <span style={{ fontSize: '0.875rem', fontWeight: 600, flex: 1, lineHeight: 1.4 }}>
+        {message}
+      </span>
       <button
         onClick={onClose}
+        aria-label="Tutup notifikasi"
         style={{
           background: 'none',
           border: 'none',
@@ -61,7 +65,8 @@ export default function Toast({ type = 'info', message, onClose, duration = 4000
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
-          padding: '2px',
+          padding: '4px',
+          borderRadius: '4px',
         }}
       >
         <X size={16} />

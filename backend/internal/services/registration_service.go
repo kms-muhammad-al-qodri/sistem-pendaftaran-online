@@ -17,7 +17,7 @@ type RegisterEventRequest struct {
 	Email       string `json:"email" binding:"required,email,max=254"`
 	Phone       string `json:"phone" binding:"required,min=6,max=30"`
 	Institution string `json:"institution" binding:"max=180"`
-	AcceptTerms bool   `json:"accept_terms" binding:"required"`
+	AcceptTerms bool   `json:"accept_terms"`
 }
 
 type UpdateRegistrationStatusRequest struct {
@@ -31,6 +31,8 @@ type RegistrationService interface {
 	GetParticipantRegistrations(userID uint64, page, limit int) ([]models.Registration, int64, error)
 	GetAdminRegistrations(eventID uint64, search, status string, page, limit int) ([]models.Registration, int64, error)
 	GetRegistrationByID(id uint64) (*models.Registration, error)
+	GetRegistrationByNumber(num string) (*models.Registration, error)
+	LookupRegistration(query string) ([]models.Registration, error)
 }
 
 type registrationService struct {
@@ -209,4 +211,44 @@ func (s *registrationService) GetRegistrationByID(id uint64) (*models.Registrati
 		return nil, errors.New("REGISTRATION_NOT_FOUND")
 	}
 	return reg, nil
+}
+
+func (s *registrationService) GetRegistrationByNumber(num string) (*models.Registration, error) {
+	trimmedNum := strings.TrimSpace(num)
+	if trimmedNum == "" {
+		return nil, errors.New("REGISTRATION_NOT_FOUND")
+	}
+	reg, err := s.regRepo.FindByRegistrationNumber(trimmedNum)
+	if err != nil || reg == nil {
+		return nil, errors.New("REGISTRATION_NOT_FOUND")
+	}
+	return reg, nil
+}
+
+func (s *registrationService) LookupRegistration(query string) ([]models.Registration, error) {
+	trimmed := strings.TrimSpace(query)
+	if trimmed == "" {
+		return []models.Registration{}, nil
+	}
+
+	// 1. Try finding by registration number
+	reg, err := s.regRepo.FindByRegistrationNumber(trimmed)
+	if err == nil && reg != nil {
+		return []models.Registration{*reg}, nil
+	}
+
+	// 2. Try finding by email
+	if strings.Contains(trimmed, "@") {
+		return s.regRepo.FindByEmail(trimmed)
+	}
+
+	// 3. Fallback search
+	list, _, err := s.regRepo.FindAll(repositories.RegistrationFilter{
+		Search: trimmed,
+		Limit:  20,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
 }

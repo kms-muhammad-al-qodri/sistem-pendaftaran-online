@@ -76,7 +76,22 @@ func NewEventService(eventRepo repositories.EventRepository, regRepo repositorie
 }
 
 func parseTime(s string) (time.Time, error) {
-	return time.Parse(time.RFC3339, s)
+	formats := []string{
+		time.RFC3339,
+		time.RFC3339Nano,
+		"2006-01-02T15:04:05Z07:00",
+		"2006-01-02T15:04:05",
+		"2006-01-02T15:04",
+		"2006-01-02 15:04:05",
+		"2006-01-02 15:04",
+	}
+	trimmed := strings.TrimSpace(s)
+	for _, f := range formats {
+		if t, err := time.Parse(f, trimmed); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, errors.New("cannot parse time: " + s)
 }
 
 func (s *eventService) CreateEvent(userID uint64, req CreateEventRequest) (*models.Event, error) {

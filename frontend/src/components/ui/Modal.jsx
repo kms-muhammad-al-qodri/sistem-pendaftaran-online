@@ -3,13 +3,23 @@ import { X } from 'lucide-react';
 
 export default function Modal({ isOpen, onClose, title, children, maxWidth = '540px' }) {
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape') {
         onClose();
       }
     };
+
+    // Lock background scroll on body
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -24,7 +34,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '54
         alignItems: 'center',
         justifyContent: 'center',
         padding: '16px',
-        backgroundColor: 'rgba(15, 23, 42, 0.75)',
+        backgroundColor: 'rgba(7, 12, 24, 0.8)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
         animation: 'fadeIn 0.2s ease',
@@ -35,12 +45,15 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '54
         style={{
           width: '100%',
           maxWidth,
-          backgroundColor: '#1e293b',
+          maxHeight: 'calc(100vh - 32px)',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: '#0f172a',
           border: '1px solid rgba(255, 255, 255, 0.12)',
           borderRadius: '18px',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)',
+          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.75), 0 0 1px 1px rgba(255, 255, 255, 0.1)',
           overflow: 'hidden',
-          animation: 'scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+          animation: 'scaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -50,19 +63,34 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '54
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '20px 24px',
+            padding: '16px 20px',
             borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'rgba(15, 23, 42, 0.95)',
           }}
         >
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#f8fafc' }}>{title}</h3>
+          <h3
+            style={{
+              fontSize: '1.15rem',
+              fontWeight: 700,
+              color: '#f8fafc',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              paddingRight: '12px',
+            }}
+          >
+            {title}
+          </h3>
           <button
             onClick={onClose}
+            aria-label="Tutup modal"
             style={{
               background: 'rgba(255, 255, 255, 0.06)',
               border: 'none',
               borderRadius: '50%',
-              width: '32px',
-              height: '32px',
+              width: '36px',
+              height: '36px',
+              minWidth: '36px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -76,7 +104,14 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '54
         </div>
 
         {/* Modal Body */}
-        <div style={{ padding: '24px', maxHeight: '80vh', overflowY: 'auto' }}>
+        <div
+          style={{
+            padding: '20px',
+            overflowY: 'auto',
+            flex: 1,
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
           {children}
         </div>
       </div>

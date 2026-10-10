@@ -64,6 +64,14 @@ func SetupRouter(
 			eventsGroup.POST("/:id/registrations", optionalAuthMiddleware(authService), regHandler.RegisterForEvent)
 		}
 
+		// Public Registrations Lookup (No Login Required for participants/guests)
+		regGroup := v1.Group("/registrations")
+		{
+			regGroup.GET("/check", regHandler.LookupRegistrations)
+			regGroup.GET("/lookup", regHandler.LookupRegistrations)
+			regGroup.GET("/check/:number", regHandler.CheckRegistrationByNumber)
+		}
+
 		// C. Participant Dashboard Endpoints
 		participantGroup := v1.Group("/participant")
 		participantGroup.Use(middleware.AuthMiddleware(authService))

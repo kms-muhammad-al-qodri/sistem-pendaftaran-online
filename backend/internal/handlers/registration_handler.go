@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"daftarin-backend/internal/middleware"
 	"daftarin-backend/internal/response"
@@ -160,4 +161,41 @@ func (h *RegistrationHandler) UpdateRegistrationStatus(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, reg)
+}
+
+func (h *RegistrationHandler) CheckRegistrationByNumber(c *gin.Context) {
+	number := c.Param("number")
+	if strings.TrimSpace(number) == "" {
+		response.ValidationError(c, map[string]string{"number": "Nomor pendaftaran wajib diisi."})
+		return
+	}
+
+	reg, err := h.regService.GetRegistrationByNumber(number)
+	if err != nil || reg == nil {
+		response.NotFound(c, "Pendaftaran dengan nomor tersebut tidak ditemukan.")
+		return
+	}
+
+	response.Success(c, http.StatusOK, reg)
+}
+
+func (h *RegistrationHandler) LookupRegistrations(c *gin.Context) {
+	q := c.DefaultQuery("q", c.Query("query"))
+	if strings.TrimSpace(q) == "" {
+		response.ValidationError(c, map[string]string{"q": "Masukkan nomor pendaftaran atau email untuk mencari."})
+		return
+	}
+
+	list, err := h.regService.LookupRegistration(q)
+	if err != nil {
+		response.InternalServerError(c, "Gagal mencari data pendaftaran.")
+		return
+	}
+
+	if len(list) == 0 {
+		response.NotFound(c, "Tidak ada data pendaftaran yang cocok dengan pencarian Anda.")
+		return
+	}
+
+	response.Success(c, http.StatusOK, list)
 }

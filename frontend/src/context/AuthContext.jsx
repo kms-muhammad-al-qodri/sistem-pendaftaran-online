@@ -1,26 +1,27 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../api/client';
-
-const AuthContext = createContext(null);
+import { AuthContext } from './authContextInstance';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch current user profile on initial app mount
-  const checkAuth = async () => {
-    try {
-      const res = await apiFetch('/auth/me');
-      setUser(res.data);
-    } catch (err) {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    checkAuth();
+    let ignore = false;
+    async function initAuth() {
+      try {
+        const res = await apiFetch('/auth/me');
+        if (!ignore) setUser(res.data);
+      } catch {
+        if (!ignore) setUser(null);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+    initAuth();
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const login = async (email, password) => {
@@ -44,7 +45,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try {
       await apiFetch('/auth/logout', { method: 'POST' });
-    } catch (err) {
+    } catch {
       // Ignore logout errors
     } finally {
       setUser(null);
@@ -62,7 +63,6 @@ export function AuthProvider({ children }) {
         login,
         register,
         logout,
-        checkAuth,
         isAdmin,
         isParticipant,
       }}
@@ -72,10 +72,6 @@ export function AuthProvider({ children }) {
   );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+export { useAuth } from './useAuth';
+export default AuthProvider;
+

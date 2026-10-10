@@ -27,6 +27,7 @@ type RegistrationRepository interface {
 	Update(registration *models.Registration) error
 	FindByID(id uint64) (*models.Registration, error)
 	FindByRegistrationNumber(num string) (*models.Registration, error)
+	FindByEmail(email string) ([]models.Registration, error)
 	FindByEventAndEmail(eventID uint64, email string) (*models.Registration, error)
 	FindByEventAndEmailTx(tx *gorm.DB, eventID uint64, email string) (*models.Registration, error)
 	FindAll(filter RegistrationFilter) ([]models.Registration, int64, error)
@@ -73,6 +74,16 @@ func (r *registrationRepository) FindByRegistrationNumber(num string) (*models.R
 		return nil, err
 	}
 	return &reg, nil
+}
+
+func (r *registrationRepository) FindByEmail(email string) ([]models.Registration, error) {
+	var list []models.Registration
+	normalizedEmail := strings.ToLower(strings.TrimSpace(email))
+	err := r.db.Preload("Event").Preload("User").Where("email = ?", normalizedEmail).Order("id DESC").Find(&list).Error
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
 }
 
 func (r *registrationRepository) FindByEventAndEmail(eventID uint64, email string) (*models.Registration, error) {
